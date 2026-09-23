@@ -1,0 +1,18 @@
+# Optional for a Linux host with a domain pointing to it and available ports 80/443.
+# NAS users can instead use their existing HTTPS reverse proxy.
+services:
+  gateway:
+    image: caddy:2-alpine
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?Set SITE_DOMAIN in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+volumes:
+  caddy_data:
+  caddy_config:

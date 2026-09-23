@@ -1,0 +1,6 @@
+platform/site/
+platform/.env
+platform/.update-lock/
+*.zip
+__pycache__/
+.DS_Store

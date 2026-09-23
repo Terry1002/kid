@@ -1,0 +1,14 @@
+services:
+  learning:
+    image: ${IMAGE:-kid-learning:local}
+    build: .
+    ports:
+      - "${BIND_ADDRESS:-0.0.0.0}:${PORT:-8088}:8080"
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
