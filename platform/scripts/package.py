@@ -13,7 +13,7 @@ with ZipFile(destination, 'w', ZIP_DEFLATED) as archive:
         if path.name == '.env' or path.suffix == '.zip':
             continue
         archive.write(path, 'kid-learning/' + path.relative_to(root).as_posix())
-    for path in (root / '.github/workflows/container.yml', root / '.gitignore'):
+    for path in (root / '.github/workflows/container.yml', root / '.gitignore', root / '.gitattributes', root / 'deploy-linux.sh', root / 'start-linux.sh'):
         archive.write(path, 'kid-learning/' + path.relative_to(root).as_posix())
 with ZipFile(destination) as archive:
     assert archive.testzip() is None

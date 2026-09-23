@@ -14,7 +14,7 @@
 
 ## 本地开发（A 电脑）
 
-Python 3.9+ 即可，不需要 npm 安装。仓库根目录运行：
+Python 3.6+ 即可，不需要 npm 安装。仓库根目录运行：
 
 ```sh
 python platform/scripts/build.py
@@ -27,6 +27,61 @@ python -m http.server 8901 --bind 127.0.0.1 --directory platform/site
 如本地预览已经安装了 Service Worker，重新构建后刷新页面，点击新版本提示；必要时关闭该站点所有标签后重新打开。不要通过覆盖缓存的方式处理版本更新。
 
 ## Linux / NAS 首次运行
+
+### 不使用 Docker：Python 一键启动
+
+支持 Git 和 Python 3.6+，启动脚本自动从 Git 克隆或更新，再构建并启动。脚本自动查找 python3 / python，排除 Python 2。先把最新脚本及 `platform/scripts/serve.py` 推送到仓库，然后在 Linux 运行：
+
+```bash
+curl -fL https://raw.githubusercontent.com/Terry1002/kid/main/start-linux.sh -o start-linux.sh
+bash start-linux.sh
+```
+
+也可用 `PYTHON_BIN=/实际路径/python3 bash start-linux.sh` 指定解释器，无需替换系统默认 Python。若系统完全没有 Python，请先提供 Linux 发行版及版本，再选择对应安装方式。
+
+自动构建、检查并监听 `0.0.0.0:8088`，无需 pip/npm 安装。在同一局域网的 iPad 打开 `http://服务器IP:8088/`。运行 `hostname -I` 查看服务器 IP，防火墙需允许端口。不要把 `0.0.0.0` 或 `127.0.0.1` 当作 iPad 访问地址。
+
+```bash
+bash start-linux.sh --port 8090       # 改端口
+bash start-linux.sh --bind 127.0.0.1 # 只允许本机访问，或放在同机反向代理后面
+```
+
+前台运行按 Ctrl+C 停止；关闭终端也可能停止进程。需要后台运行可使用：
+
+```bash
+nohup bash start-linux.sh > /tmp/kid-learning.log 2>&1 &
+echo $!                            # 记下进程 PID；停止用 kill PID
+tail -f /tmp/kid-learning.log       # 查看启动结果
+```
+
+默认克隆到 `~/kid-learning`，再次运行同一脚本会先从 Git 快进更新。可用 `--dir /实际部署目录 --branch main --repo 仓库地址` 自定义。私有仓库可将启动脚本复制到 Linux，配置 SSH 密钥后使用 `--repo git@github.com:Terry1002/kid.git`。现有目录如有本地修改、分叉或 origin 不匹配，脚本会停止，不强制覆盖。
+
+此方式不自动开机启动、不在运行时定时更新。更新时先停止原脚本再运行；启动期间会一直持有 `部署目录.run-lock`，防止另一个启动脚本修改正在服务的目录。异常断电后确认无进程才可移除空锁目录。Python 服务适合家庭局域网，公网部署应放在正式 HTTPS 反向代理后面。HTTP 下基础练习可用，iPad PWA 离线及麦克风仍需可信 HTTPS。
+
+### 从 Git 一键部署（不需要镜像仓库）
+
+仓库根目录的 `deploy-linux.sh` 会检查 Git、Docker、Compose v2，克隆或快进更新代码，在服务器本地构建镜像并启动。再次运行相同命令即可更新。默认仓库为 `https://github.com/Terry1002/kid.git`，默认部署目录为 `$HOME/kid-learning`。
+
+先将该脚本及本次修改推送到 Git，然后在 Linux 执行：
+
+```bash
+curl -fL https://raw.githubusercontent.com/Terry1002/kid/main/deploy-linux.sh -o deploy-linux.sh
+bash deploy-linux.sh
+```
+
+自定义端口与目录：
+
+```bash
+PORT=8090 bash deploy-linux.sh https://github.com/Terry1002/kid.git /opt/kid-learning
+```
+
+使用私有仓库时，raw 下载可能不可用。可将本地 `deploy-linux.sh` 复制到 Linux，先配置 SSH 密钥，再运行 `bash deploy-linux.sh git@github.com:Terry1002/kid.git`。克隆后的 origin 地址需与后续传入地址一致。不要把访问令牌写到 URL。
+
+当前用户需要部署目录写权限及 Docker 权限。脚本不会安装系统软件、强制覆盖 Git 修改或配置定时任务。构建失败保留旧服务；新容器健康检查失败时，尝试恢复上个镜像与 Compose 配置。更新可能短暂中断。首次失败没有旧服务可恢复。异常断电留下的 `部署目录.deploy-lock` 只能在确认没有部署任务运行后移除。
+
+Git 部署会忽略 `.env` 的 IMAGE，使用本地镜像；不要在同一个部署上混用后文的镜像自动更新脚本。稳定的端口配置可在部署后的 `platform/.env` 修改。PORT 环境变量只影响当次运行，若使用它，则后续更新也应提供相同的值。
+
+### 手动 Docker 部署
 
 要求设备支持 Docker Engine 和 Docker Compose v2（包含 `--wait` 与 `--wait-timeout`）。不是所有群晖硬件都支持容器。将整个 `platform` 文件夹复制到部署端，进入目录：
 
